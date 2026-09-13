@@ -52,3 +52,15 @@ Host = 'mqtt-broker'
 Port = 58090
 Type = 'mqtt'
 PublishTopicPrefix = 'eventbus/in'
+
+# 翠鸟业务扩展（docs/water-platform-plan.md / docs/api-contract.md）
+[ApplicationSettings]
+# 设备直连接入协议 topic 前缀（docs/device-protocol.md）
+# ekuiper 告警回调地址覆盖（docker 部署保持默认服务名；宿主机部署时改为 http://<宿主IP>:58082）
+#EkuiperAlertCallbackUrl = 'http://hummingbird-core:58081'
+# 微信小程序（不配置 AppId 时登录走开发模式 openid=dev_+code）
+#WeChatAppId = ''
+#WeChatAppSecret = ''
+#WeChatTemplateId = ''      # 订阅消息模板 ID（一次性订阅）
+#WeChatTemplateMode = 'oneoff'  # oneoff（默认，按配额）/ longterm（免配额）
+#WeChatNotifyPage = 'pages/alarm/index'  # 订阅消息点击跳转页
