@@ -16,9 +16,14 @@
 # 
 #  ----------------------------------------------------------------------------------
 
-ARG BUILDER_BASE=registry.cn-shanghai.aliyuncs.com/winc-edgex/edgex:1.18.8-alpine3.16
+# go.mod 已升级到 go 1.24（paho v1.5.1 等安全升级要求），构建镜像同步升级
+# Docker Hub 直连不可达时，默认走 daocloud 镜像源；可覆盖：--build-arg BUILDER_BASE=golang:1.24-alpine
+ARG BUILDER_BASE=docker.m.daocloud.io/library/golang:1.24-alpine
 
 FROM ${BUILDER_BASE} AS builder
+
+# CGO 编译（sqlite）需要 gcc/musl-dev；Makefile 需要 make；go build 需要 git
+RUN apk add --no-cache gcc musl-dev make git
 
 WORKDIR /edge
 
@@ -31,7 +36,7 @@ COPY . .
 RUN make cmd/hummingbird-core/hummingbird-core
 
 #Next image - Copy built Go binary into new workspace
-FROM registry.cn-shanghai.aliyuncs.com/winc-edgex/alpine:3.12
+FROM docker.m.daocloud.io/library/alpine:3.20
 
 ENV APP_PORT=58081
 ENV WEB_PORT=3000

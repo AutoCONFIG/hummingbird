@@ -21,8 +21,9 @@ const (
 type MetadataType string
 
 const (
-	MySQL  MetadataType = "mysql"
-	SQLite MetadataType = "sqlite"
+	MySQL    MetadataType = "mysql"
+	SQLite   MetadataType = "sqlite"
+	Postgres MetadataType = "postgres"
 )
 
 type DataType string

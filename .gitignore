@@ -18,4 +18,10 @@ cmd/mqtt-broker/mqtt-broker
 kuiper
 db-data/leveldb-core-data
 manifest/docker/db-data/leveldb-core-data/
+manifest/docker/db-data/core-data/
 manifest/docker/driver-data/
+
+.mimosa/
+.zcode/
+.codex/
+.claude/

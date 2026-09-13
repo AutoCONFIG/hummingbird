@@ -12,6 +12,7 @@ import (
 	"github.com/winc-link/hummingbird/internal/hummingbird/core/config"
 	"github.com/winc-link/hummingbird/internal/hummingbird/core/container"
 	"github.com/winc-link/hummingbird/internal/hummingbird/core/infrastructure/mysql"
+	"github.com/winc-link/hummingbird/internal/hummingbird/core/infrastructure/postgres"
 	"github.com/winc-link/hummingbird/internal/hummingbird/core/infrastructure/sqlite"
 	"github.com/winc-link/hummingbird/internal/pkg/constants"
 	"github.com/winc-link/hummingbird/internal/tools/datadb/tdengine"
@@ -47,6 +48,10 @@ func (d Database) newDBClient(
 	switch databaseInfo.Type {
 	case string(constants.MySQL):
 		return mysql.NewClient(dtos.Configuration{
+			Dsn: databaseInfo.Dsn,
+		}, lc)
+	case string(constants.Postgres):
+		return postgres.NewClient(dtos.Configuration{
 			Dsn: databaseInfo.Dsn,
 		}, lc)
 	case string(constants.SQLite):
