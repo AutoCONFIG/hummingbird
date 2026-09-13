@@ -1,0 +1,8 @@
+.git
+.gitignore
+docs
+manifest/docker/db-data
+manifest/docker/kuiper
+manifest/docker/logs
+cmd/hummingbird-core/hummingbird-core
+cmd/mqtt-broker/mqtt-broker

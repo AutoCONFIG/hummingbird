@@ -22,6 +22,8 @@ FROM ${BUILDER_BASE} AS builder
 
 WORKDIR /edge
 
+ENV GOPROXY=https://goproxy.cn,direct
+
 COPY . .
 
 RUN make cmd/hummingbird-core/hummingbird-core

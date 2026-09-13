@@ -2,6 +2,8 @@ package gateway
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/winc-link/hummingbird/internal/dtos"
 	"github.com/winc-link/hummingbird/internal/pkg/constants"
@@ -49,7 +51,11 @@ func (ctl *controller) InitInfo(c *gin.Context) {
 		return
 	}
 
-	httphelper.ResultSuccess(res, c.Writer, lc)
+	// 前端登录页读取响应体顶层的 isInit（与 success 平级）；包在 result 里前端会一直停留在初始化表单
+	c.JSON(http.StatusOK, struct {
+		httphelper.CommonResponse
+		IsInit bool `json:"isInit"`
+	}{CommonResponse: httphelper.NewSuccessCommonResponse(res), IsInit: res.IsInit})
 }
 
 // @Tags    用户系统
