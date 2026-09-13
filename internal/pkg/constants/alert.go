@@ -66,10 +66,11 @@ const (
 	DingDing AlertWay = "钉钉机器人"
 	FeiShu   AlertWay = "飞书机器人"
 	WEBAPI   AlertWay = "API接口"
+	WechatMini AlertWay = "微信小程序"
 )
 
 func GetAlertWays() []string {
-	return []string{string(SMS), string(PHONE), string(QYweixin), string(DingDing), string(FeiShu), string(WEBAPI)}
+	return []string{string(SMS), string(PHONE), string(QYweixin), string(DingDing), string(FeiShu), string(WEBAPI), string(WechatMini)}
 }
 
 const (

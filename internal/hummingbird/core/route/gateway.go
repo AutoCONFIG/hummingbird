@@ -157,4 +157,21 @@ func RegisterGateway(engine *gin.Engine, dic *di.Container) {
 		v1Auth.POST("language-sdk-sync", ctl.LanguageSdkSync) //废弃
 	}
 
+	/*******翠鸟业务管理（租户/养殖场/池塘/阈值）*******/
+	{
+		v1Auth.POST("tenants", ctl.TenantAdd)
+		v1Auth.GET("tenants", ctl.TenantsSearch)
+		v1Auth.PUT("tenant/:tenantId/invite-code", ctl.TenantInviteCodeReset)
+		v1Auth.POST("farm", ctl.FarmAdd)
+		v1Auth.GET("farms", ctl.FarmsSearch)
+		v1Auth.DELETE("farm/:farmId", ctl.FarmDelete)
+		v1Auth.POST("pond", ctl.PondAdd)
+		v1Auth.GET("ponds", ctl.PondsSearch)
+		v1Auth.DELETE("pond/:pondId", ctl.PondDelete)
+		v1Auth.POST("pond/:pondId/devices", ctl.PondDeviceBind)
+		v1Auth.DELETE("pond/:pondId/device/:deviceId", ctl.PondDeviceUnbind)
+		v1Auth.GET("pond/:pondId/devices", ctl.PondDevicesSearch)
+		v1Auth.POST("pond/:pondId/thresholds", ctl.PondThresholdUpsert)
+	}
+
 }

@@ -17,6 +17,7 @@ package route
 import (
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
+	"github.com/winc-link/hummingbird/internal/hummingbird/core/controller/http/app"
 	"github.com/winc-link/hummingbird/internal/pkg/di"
 	"github.com/winc-link/hummingbird/internal/pkg/i18n"
 	"github.com/winc-link/hummingbird/internal/pkg/middleware"
@@ -33,4 +34,6 @@ func LoadRestRoutes(r *gin.Engine, dic *di.Container) {
 	RegisterGateway(r, dic)
 	// load open api
 	RegisterOpenApi(r, dic)
+	// 翠鸟小程序/APP API（docs/api-contract.md）
+	app.RegisterAppRoutes(r, dic)
 }

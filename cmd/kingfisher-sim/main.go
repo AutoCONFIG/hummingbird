@@ -24,6 +24,7 @@ func main() {
 	once := flag.Bool("once", false, "每台只上报一帧后退出")
 	offline := flag.Bool("offline", false, "发布 retained 离线遗嘱后退出")
 	online := flag.Bool("online", false, "发布上线状态后退出")
+	doOverride := flag.Float64("do", 0, "固定溶解氧值（>0 时覆盖随机值，便于触发阈值测试）")
 	flag.Parse()
 
 	rand.Seed(time.Now().UnixNano())
@@ -58,7 +59,7 @@ func main() {
 		}
 
 		report := func() {
-			payload := genPayload()
+			payload := genPayload(*doOverride)
 			publish(client, deviceSn, "report", payload, false)
 		}
 		report()
@@ -68,7 +69,7 @@ func main() {
 		go func(c mqtt.Client, s string) {
 			ticker := time.NewTicker(*interval)
 			for range ticker.C {
-				payload := genPayload()
+				payload := genPayload(*doOverride)
 				publish(c, s, "report", payload, false)
 			}
 		}(client, deviceSn)
@@ -91,10 +92,14 @@ func publish(client mqtt.Client, sn, kind, payload string, retain bool) {
 }
 
 // genPayload 生成一帧水质数据（溶解氧模拟 3.5~7.5，便于触发低氧告警测试）
-func genPayload() string {
+func genPayload(doOverride float64) string {
 	v := func(min, max float64) string {
 		return strconv.FormatFloat(min+rand.Float64()*(max-min), 'f', 2, 64)
 	}
+	do := v(3.5, 7.5)
+	if doOverride > 0 {
+		do = strconv.FormatFloat(doOverride, 'f', 2, 64)
+	}
 	return fmt.Sprintf(`{"temperature":%s,"dissolved_oxygen":%s,"ph":%s,"turbidity":%s,"salinity":%s,"battery":3.9,"signal":-67}`,
-		v(24, 30), v(3.5, 7.5), v(7.0, 8.5), v(5, 40), v(25, 31))
+		v(24, 30), do, v(7.0, 8.5), v(5, 40), v(25, 31))
 }

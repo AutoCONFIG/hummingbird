@@ -20,6 +20,7 @@ import (
 	"github.com/winc-link/hummingbird/internal/dtos"
 	"github.com/winc-link/hummingbird/internal/hummingbird/core/application"
 	"github.com/winc-link/hummingbird/internal/hummingbird/core/application/alertcentreapp"
+	"github.com/winc-link/hummingbird/internal/hummingbird/core/application/biz"
 	"github.com/winc-link/hummingbird/internal/hummingbird/core/application/categorytemplate"
 	"github.com/winc-link/hummingbird/internal/hummingbird/core/application/deviceapp"
 	"github.com/winc-link/hummingbird/internal/hummingbird/core/application/dmi"
@@ -299,6 +300,18 @@ func (b *Bootstrap) initClient(ctx context.Context, wg *sync.WaitGroup, dic *di.
 	dic.Update(di.ServiceConstructorMap{
 		container.MessageStoreItfName: func(get di.Get) interface{} {
 			return messageStoreItf
+		},
+	})
+
+	// 翠鸟业务层（租户/养殖场/池塘/微信用户，AutoMigrate 业务表）
+	bizApp, err := biz.NewBizApp(lc, container.DBClientFrom(dic.Get).GetDBInstance())
+	if err != nil {
+		lc.Errorf("biz app init failed: %v", err)
+		return false
+	}
+	dic.Update(di.ServiceConstructorMap{
+		container.BizAppName: func(get di.Get) interface{} {
+			return bizApp
 		},
 	})
 	return true

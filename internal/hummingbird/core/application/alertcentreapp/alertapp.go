@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/winc-link/hummingbird/internal/dtos"
 	resourceContainer "github.com/winc-link/hummingbird/internal/hummingbird/core/container"
+	"github.com/winc-link/hummingbird/internal/hummingbird/core/config"
 	interfaces "github.com/winc-link/hummingbird/internal/hummingbird/core/interface"
 	"github.com/winc-link/hummingbird/internal/models"
 	"github.com/winc-link/hummingbird/internal/pkg/constants"
@@ -224,11 +225,11 @@ func (p alertApp) UpdateAlertRule(ctx context.Context, req dtos.RuleUpdateReques
 	}
 	configapp := resourceContainer.ConfigurationFrom(p.dic.Get)
 	if !exist {
-		if err = ekuiperApp.CreateRule(ctx, dtos.GetRuleAlertEkuiperActions(configapp.Service.Url()), alertRule.Id, sql); err != nil {
+		if err = ekuiperApp.CreateRule(ctx, dtos.GetRuleAlertEkuiperActions(ekuiperCallbackUrl(configapp)), alertRule.Id, sql); err != nil {
 			return err
 		}
 	} else {
-		if err = ekuiperApp.UpdateRule(ctx, dtos.GetRuleAlertEkuiperActions(configapp.Service.Url()), alertRule.Id, sql); err != nil {
+		if err = ekuiperApp.UpdateRule(ctx, dtos.GetRuleAlertEkuiperActions(ekuiperCallbackUrl(configapp)), alertRule.Id, sql); err != nil {
 			return err
 		}
 	}
@@ -882,6 +883,11 @@ func (p alertApp) AddAlert(ctx context.Context, req map[string]interface{}) erro
 				}
 			}
 			go webApiClient.Send(notify.Option["webhook"], headermap, alertRule, device, product, req)
+		case constants.WechatMini:
+			if !checkEffectTime(notify.StartEffectTime, notify.EndEffectTime) {
+				continue
+			}
+			p.dispatchWechatMini(notify, alertRule, device, req)
 		}
 	}
 
@@ -943,4 +949,12 @@ func (p alertApp) CheckRuleByDeviceId(ctx context.Context, deviceId string) erro
 		}
 	}
 	return nil
+}
+
+// ekuiperCallbackUrl 告警回调地址：优先 EkuiperAlertCallbackUrl 覆盖（宿主机部署/跨网场景），否则 Service.Url()
+func ekuiperCallbackUrl(configapp *config.ConfigurationStruct) string {
+	if override := configapp.ApplicationSettings.EkuiperAlertCallbackUrl; override != "" {
+		return override
+	}
+	return configapp.Service.Url()
 }

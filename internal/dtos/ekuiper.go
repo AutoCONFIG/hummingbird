@@ -14,6 +14,17 @@
 
 package dtos
 
+import "strings"
+
+// resolveEkuiperCallbackUrl 解析 ekuiper 回调平台的基础地址：
+// actionUrl 非空且不含 0.0.0.0（容器内不可达）时使用之，否则回退 docker-compose 服务名约定
+func resolveEkuiperCallbackUrl(actionUrl string) string {
+	if actionUrl != "" && !strings.Contains(actionUrl, "0.0.0.0") {
+		return strings.TrimSuffix(actionUrl, "/")
+	}
+	return "http://hummingbird-core:58081"
+}
+
 type GetRuleInfoResponse struct {
 	Triggered bool                     `json:"triggered"`
 	Id        string                   `json:"id"`
@@ -87,8 +98,9 @@ func GetRuleAlertEkuiperActions(actionUrl string) []Actions {
 	var a []Actions
 	rest := make(map[string]interface{})
 	rest["method"] = "POST"
-	//bug-fix
-	rest["url"] = "http://hummingbird-core:58081" + "/api/v1/ekuiper/alert"
+	// 回调地址：非 0.0.0.0 的 actionUrl 优先（如宿主机部署/EkuiperAlertCallbackUrl 覆盖），
+	// 否则保持原 docker-compose 服务名约定
+	rest["url"] = resolveEkuiperCallbackUrl(actionUrl) + "/api/v1/ekuiper/alert"
 	rest["bodyType"] = "json"
 	rest["timeout"] = 5000
 	rest["runAsync"] = false
@@ -106,7 +118,7 @@ func GetRuleSceneEkuiperActions(actionUrl string) []Actions {
 	var a []Actions
 	rest := make(map[string]interface{})
 	rest["method"] = "POST"
-	rest["url"] = "http://hummingbird-core:58081" + "/api/v1/ekuiper/scene"
+	rest["url"] = resolveEkuiperCallbackUrl(actionUrl) + "/api/v1/ekuiper/scene"
 	rest["bodyType"] = "json"
 	rest["timeout"] = 5000
 	rest["runAsync"] = false

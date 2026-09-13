@@ -101,6 +101,14 @@ type ApplicationSettings struct {
 	GatewayEdition  string // 网关版本标识
 	WebBuildPath    string // 前端路径
 	TedgeNumber     string
+
+	// 翠鸟小程序（docs/api-contract.md）：不配置 AppId 时登录走开发模式
+	WeChatAppId      string // 小程序 AppId
+	WeChatAppSecret  string // 小程序 AppSecret
+	WeChatTemplateId string // 订阅消息模板 ID（一次性订阅）
+	WeChatTemplateMode string // 订阅模板类型：oneoff（默认，按配额）/ longterm（免配额）
+	WeChatNotifyPage   string // 订阅消息点击跳转页面路径
+	EkuiperAlertCallbackUrl string // ekuiper 告警回调地址覆盖（宿主机部署/跨网场景），空则用 Service.Url()/docker 服务名
 }
 
 // URL constructs a URL from the protocol, host and port and returns that as a string.
