@@ -1,5 +1,3 @@
-version: "3"
-
 networks:
   hummingbird:
     driver: bridge
@@ -28,6 +26,33 @@ services:
       MQTT_SOURCE__DEFAULT__SERVER: "tcp://mqtt-broker:58090"
       KUIPER__BASIC__CONSOLELOG: "true"
       KUIPER__BASIC__IGNORECASE: "false"
+    networks:
+      - hummingbird
+  postgres:
+    # 元数据库（可选，默认仍用内置 SQLite；启用方式见 config/configuration.toml 的 postgres 注释项）
+    # 公网暴露面：仅内网，不映射宿主机端口
+    image: docker.m.daocloud.io/library/postgres:16-alpine
+    container_name: postgres
+    hostname: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: hummingbird
+      POSTGRES_PASSWORD: hummingbird   # 生产环境务必改为强密码
+      POSTGRES_DB: hummingbird
+    volumes:
+      - ./db-data/postgres-data:/var/lib/postgresql/data
+    networks:
+      - hummingbird
+  tdengine:
+    # 时序数据库（设备数据；启用方式见 config/configuration.toml 的 tdengine 注释项）
+    # 版本对齐：go.mod driver-go/v3 v3.5.0 ↔ TDengine 3.1.x（变更需回归 datadb 链路）
+    # 公网暴露面：仅内网，不映射宿主机端口
+    image: docker.m.daocloud.io/tdengine/tdengine:3.1.1.0
+    container_name: tdengine
+    hostname: tdengine
+    restart: always
+    volumes:
+      - ./db-data/tdengine-data:/var/lib/taos
     networks:
       - hummingbird
   hummingbird-core:

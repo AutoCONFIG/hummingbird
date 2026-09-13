@@ -75,7 +75,9 @@ func NewClient(config dtos.Configuration, lc logger.LoggingClient) (c interfaces
 }
 
 func (c *Client) Insert(ctx context.Context, table string, data map[string]interface{}) (err error) {
-	ts := time.Now().Format("2006-01-02 15:04:05.000")
+	// 与 GetDeviceProperty 查询端保持一致使用 UTC（服务端按 UTC 解析时间串），
+	// 否则 TZ 非 UTC 环境下写入的时间戳会整体偏移
+	ts := time.Now().UTC().Format("2006-01-02 15:04:05.000")
 
 	var (
 		field = []string{"ts"}
@@ -445,7 +447,9 @@ func (c *Client) GetDeviceEvent(req dtos.ThingModelEventDataRequest, device mode
 
 func (c *Client) GetDeviceMsgCountByGiveTime(deviceId string, startTime, endTime int64) (int, error) {
 	var count int
-	err := c.client.QueryRow("select count(*) from ? where ts >= '?' and ts <= '?'", "hummingbird_"+deviceId, time.Unix(startTime, 0).Format("2006-01-02 15:04:05.000"), time.Unix(endTime, 0).Format("2006-01-02 15:04:05.000")).Scan(&count)
+	// 设备子表命名统一为 device_<deviceId>（DB_PREFIX），原 hummingbird_<deviceId> 与建表约定不符
+	// 时间入参为秒；与全库查询一致使用 UTC 格式化
+	err := c.client.QueryRow("select count(*) from ? where ts >= '?' and ts <= '?'", constants.DB_PREFIX+deviceId, time.Unix(startTime, 0).UTC().Format("2006-01-02 15:04:05.000"), time.Unix(endTime, 0).UTC().Format("2006-01-02 15:04:05.000")).Scan(&count)
 	if err != nil {
 		return 0, err
 	}
@@ -588,11 +592,38 @@ func (c *Client) GetOne(ctx context.Context, sql string, args ...any) (rs gdb.Re
 }
 
 func (c *Client) GetDevicePropertyCount(request dtos.ThingModelPropertyDataRequest) (int, error) {
-	//TODO implement me
-	panic("implement me")
+	return c.countRows(request.DeviceId, request.Code, request.Range)
 }
 
 func (c *Client) GetDeviceEventCount(req dtos.ThingModelEventDataRequest) (int, error) {
-	//TODO implement me
-	panic("implement me")
+	return c.countRows(req.DeviceId, req.EventCode, req.Range)
+}
+
+// countRows 统计设备某列在时间范围内的记录数（列可为属性 code 或事件 code），
+// 查询风格与 GetDeviceProperty 的 count 查询保持一致
+func (c *Client) countRows(deviceId, code string, rangeMs []int64) (int, error) {
+	if deviceId == "" || code == "" {
+		return 0, nil
+	}
+	var count int
+	if len(rangeMs) == 2 {
+		first, last := rangeMs[0], rangeMs[1]
+		if first > last {
+			first, last = last, first
+		}
+		from := time.UnixMilli(first).UTC().Format("2006-01-02 15:04:05.000")
+		to := time.UnixMilli(last).UTC().Format("2006-01-02 15:04:05.000")
+		err := c.client.QueryRow("select count(*) from ? where ts >= '?' and ts <= '?' and ? is not null",
+			"device_"+deviceId, from, to, strings.ToLower(code)).Scan(&count)
+		if err != nil {
+			return 0, err
+		}
+		return count, nil
+	}
+	err := c.client.QueryRow("select count(*) from ? where ? is not null",
+		"device_"+deviceId, strings.ToLower(code)).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }
