@@ -25,6 +25,7 @@ func main() {
 	offline := flag.Bool("offline", false, "发布 retained 离线遗嘱后退出")
 	online := flag.Bool("online", false, "发布上线状态后退出")
 	doOverride := flag.Float64("do", 0, "固定溶解氧值（>0 时覆盖随机值，便于触发阈值测试）")
+	padSN := flag.Bool("padsn", false, "count>1 时 SN 用 4 位零填充（LOAD → LOAD0001）")
 	flag.Parse()
 
 	rand.Seed(time.Now().UnixNano())
@@ -32,7 +33,11 @@ func main() {
 	for i := 0; i < *count; i++ {
 		deviceSn := *sn
 		if *count > 1 {
-			deviceSn = *sn + "-" + strconv.Itoa(i+1)
+			if *padSN {
+				deviceSn = fmt.Sprintf("%s%04d", *sn, i+1)
+			} else {
+				deviceSn = *sn + "-" + strconv.Itoa(i+1)
+			}
 		}
 		opts := mqtt.NewClientOptions().
 			AddBroker(*broker).
