@@ -18,9 +18,7 @@ require (
 	github.com/gorilla/schema v1.2.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/hpcloud/tail v1.0.0
-	github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c
 	github.com/kirinlabs/HttpRequest v1.1.1
-	github.com/mitchellh/mapstructure v1.4.3
 	github.com/nakabonne/tstorage v0.3.6
 	github.com/nicksnyder/go-i18n/v2 v2.2.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -95,6 +93,7 @@ require (
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/mattn/go-sqlite3 v1.14.12 // indirect
+	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
