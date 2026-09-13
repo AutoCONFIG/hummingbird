@@ -16,10 +16,14 @@ package interfaces
 
 import (
 	"context"
+	"errors"
 	"github.com/winc-link/hummingbird/internal/dtos"
 	"github.com/winc-link/hummingbird/internal/models"
 	"github.com/winc-link/hummingbird/internal/pkg/constants"
 )
+
+// ErrDailyAggNotSupported 当前时序实现不支持按天聚合查询时返回
+var ErrDailyAggNotSupported = errors.New("daily aggregation not supported by this data db")
 
 type DataDBClient interface {
 	GetDataDBType() constants.DataType
@@ -43,4 +47,8 @@ type DataDBClient interface {
 	GetDevicePropertyCount(dtos.ThingModelPropertyDataRequest) (int, error)
 	GetDeviceEventCount(req dtos.ThingModelEventDataRequest) (int, error)
 	GetDeviceMsgCountByGiveTime(deviceId string, startTime, endTime int64) (int, error)
+
+	// GetDevicePropertyDailyAgg 按天聚合查询设备属性（30 天曲线数据源）。
+	// 不支持的实现返回 ErrDailyAggNotSupported，调用方回退到原始数据自行降采样。
+	GetDevicePropertyDailyAgg(req dtos.ThingModelPropertyDataRequest, device models.Device) ([]dtos.ReportData, int, error)
 }

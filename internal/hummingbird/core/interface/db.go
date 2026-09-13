@@ -81,6 +81,7 @@ type DBClient interface {
 	DeviceOfflineByCloudInstanceId(id string) (edgeXErr error)
 	MsgReportDeviceById(id string) (device models.Device, edgeXErr error)
 	DeviceByCloudId(id string) (models.Device, error)
+	DeviceBySn(sn string) (models.Device, error)
 	DevicesSearch(offset int, limit int, req dtos.DeviceSearchQueryRequest) ([]models.Device, uint32, error)
 	DeviceMqttAuthInfo(id string) (device models.MqttAuth, edgeXErr error)
 	DriverMqttAuthInfo(id string) (device models.MqttAuth, edgeXErr error)

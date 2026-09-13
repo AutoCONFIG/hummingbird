@@ -298,6 +298,10 @@ func (c *Client) DeviceByCloudId(id string) (device models.Device, edgeXErr erro
 	return deviceByCloudId(c, id)
 }
 
+func (c *Client) DeviceBySn(sn string) (device models.Device, edgeXErr error) {
+	return deviceBySn(c, sn)
+}
+
 func (c *Client) DeviceMqttAuthInfo(id string) (device models.MqttAuth, edgeXErr error) {
 	return deviceMqttAuthInfo(c, id)
 }

@@ -179,6 +179,10 @@ func (p *productApp) AddProduct(ctx context.Context, req dtos.ProductAddRequest)
 	if err != nil {
 		return "", err
 	}
+	// TDengine 等时序库需要超级表先于物模型添加存在（AddThingModel 走 ALTER STABLE ADD COLUMN）
+	if err = resourceContainer.DataDBClientFrom(p.dic.Get).CreateStable(ctx, insertProduct); err != nil {
+		return "", err
+	}
 	go func() {
 		p.CreateProductCallBack(insertProduct)
 	}()

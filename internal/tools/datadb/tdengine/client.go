@@ -108,7 +108,9 @@ func (c *Client) CreateDatabase(ctx context.Context) (err error) {
 }
 
 func (c *Client) CreateStable(ctx context.Context, product models.Product) (err error) {
-	columns := []string{"ts TIMESTAMP"}
+	// TDengine 3.1 要求除 ts 外至少一个普通列（否则报 Illegal number of columns），
+	// 产品刚创建、物模型未添加时用占位列兜底，后续列由 AddDatabaseField 追加
+	columns := []string{"ts TIMESTAMP", "placeholder NCHAR(1)"}
 
 	for _, property := range product.Properties {
 		columns = append(columns, c.column(property.TypeSpec.Type, property.Code, property.Name))
@@ -456,9 +458,51 @@ func (c *Client) GetDeviceMsgCountByGiveTime(deviceId string, startTime, endTime
 	return count, nil
 }
 
+// GetDevicePropertyDailyAgg 按天聚合查询（TDengine 原生 INTERVAL 窗口），供 30 天曲线使用
+func (c *Client) GetDevicePropertyDailyAgg(req dtos.ThingModelPropertyDataRequest, device models.Device) ([]dtos.ReportData, int, error) {
+	if len(req.Range) != 2 || req.Code == "" {
+		return nil, 0, nil
+	}
+	first, last := req.Range[0], req.Range[1]
+	if first > last {
+		first, last = last, first
+	}
+	from := time.UnixMilli(first).UTC().Format("2006-01-02 15:04:05.000")
+	to := time.UnixMilli(last).UTC().Format("2006-01-02 15:04:05.000")
+	sql := "select _wstart, avg(?) as val from ? where ts >= '?' and ts <= '?' and ? is not null interval(1d)"
+	rows, err := c.client.Query(sql, strings.ToLower(req.Code), "device_"+device.Id, from, to, strings.ToLower(req.Code))
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+	var response []dtos.ReportData
+	for rows.Next() {
+		columns, _ := rows.Columns()
+		values := make([]any, len(columns))
+		var rs gdb.Record
+		rs = make(gdb.Record, len(columns))
+		for i := range values {
+			values[i] = new(any)
+		}
+		if err = rows.Scan(values...); err != nil {
+			return nil, 0, err
+		}
+		for i, cs := range columns {
+			rs[cs] = gvar.New(values[i])
+		}
+		reportData := dtos.ReportData{
+			Time:  rs["ts"].Time().UnixMilli(),
+			Value: rs["val"].String(),
+		}
+		response = append(response, reportData)
+	}
+	return response, len(response), nil
+}
+
 func (c *Client) GetDeviceProperty(req dtos.ThingModelPropertyDataRequest, device models.Device) ([]dtos.ReportData, int, error) {
 	var response []dtos.ReportData
 	var count int
+	c.loggingClient.Debugf("GetDeviceProperty: deviceId=%s code=%s range=%v last=%v", device.Id, req.Code, req.Range, req.Last)
 	if len(req.Range) == 2 {
 		var firstTime, lastTime string
 		if req.Range[0] < req.Range[1] {
@@ -523,37 +567,26 @@ func (c *Client) GetDeviceProperty(req dtos.ThingModelPropertyDataRequest, devic
 			response = append(response, reportData)
 		}
 	} else if req.Last {
-		sql := "select ts,last(?) as ? from hummingbird.?"
-		rows, err := c.client.Query(sql, strings.ToLower(req.Code), strings.ToLower(req.Code), "device_"+device.Id)
+		// 标识符（列名/表名）无法参数绑定，code 来自产品物模型（服务端数据），device.Id 为服务端生成，无注入面
+		sql := fmt.Sprintf("select ts, last(%s) from hummingbird.device_%s", strings.ToLower(req.Code), device.Id)
+		rows, err := c.client.Query(sql)
 		if err != nil {
+			c.loggingClient.Errorf("GetDeviceProperty last query: %v", err)
 			return []dtos.ReportData{}, count, nil
 		}
 		defer rows.Close()
-		columns, _ := rows.Columns()
-		values := make([]any, len(columns))
-		var rs gdb.Record
-		rs = make(gdb.Record, len(columns))
-		for i := range values {
-			values[i] = new(any)
-		}
-
 		for rows.Next() {
-			err = rows.Scan(values...)
-			if err != nil {
-				return nil, count, err
+			var ts time.Time
+			var val any
+			if err = rows.Scan(&ts, &val); err != nil {
+				return []dtos.ReportData{}, count, err
 			}
-
-			for i, cs := range columns {
-				rs[cs] = gvar.New(values[i])
+			reportData := dtos.ReportData{
+				Time:  ts.UnixMilli(),
+				Value: gvar.New(val).String(),
 			}
+			response = append(response, reportData)
 		}
-		var reportData dtos.ReportData
-		reportData.Time = rs["ts"].Time().UnixMilli()
-		if reportData.Time < 0 {
-			reportData.Time = 0
-		}
-		reportData.Value = rs[strings.ToLower(req.Code)].String()
-		response = append(response, reportData)
 	}
 
 	return response, count, nil

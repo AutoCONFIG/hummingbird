@@ -400,3 +400,8 @@ func (c *Client) GetDeviceMsgCountByGiveTime(deviceId string, startTime, endTime
 
 	return count, nil
 }
+
+// GetDevicePropertyDailyAgg leveldb 不支持服务端按天聚合，调用方应回退原始数据自行降采样
+func (c *Client) GetDevicePropertyDailyAgg(req dtos.ThingModelPropertyDataRequest, device models.Device) ([]dtos.ReportData, int, error) {
+	return nil, 0, interfaces.ErrDailyAggNotSupported
+}

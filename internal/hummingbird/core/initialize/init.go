@@ -30,6 +30,7 @@ import (
 	"github.com/winc-link/hummingbird/internal/hummingbird/core/application/languagesdkapp"
 	"github.com/winc-link/hummingbird/internal/hummingbird/core/application/messageapp"
 	"github.com/winc-link/hummingbird/internal/hummingbird/core/application/messagestore"
+	"github.com/winc-link/hummingbird/internal/hummingbird/core/application/mqttgateway"
 	"github.com/winc-link/hummingbird/internal/hummingbird/core/application/monitor"
 	"github.com/winc-link/hummingbird/internal/hummingbird/core/application/persistence"
 	"github.com/winc-link/hummingbird/internal/hummingbird/core/application/productapp"
@@ -84,6 +85,9 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 	if !initApp(ctx, configuration, dic) {
 		return false
 	}
+
+	// 内置 MQTT 设备网关：订阅 water/{sn}/report|status，直连设备数据入平台（协议见 docs/device-protocol.md）
+	mqttgateway.NewGatewayApp(ctx, wg, dic)
 
 	// rpc 服务
 	if ok := initRPCServer(ctx, wg, dic); !ok {

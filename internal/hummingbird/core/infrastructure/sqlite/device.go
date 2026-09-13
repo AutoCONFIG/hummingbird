@@ -100,6 +100,20 @@ func deviceByCloudId(c *Client, id string) (device models.Device, edgeXErr error
 	return
 }
 
+func deviceBySn(c *Client, sn string) (device models.Device, edgeXErr error) {
+	if sn == "" {
+		return device, errort.NewCommonEdgeX(errort.DefaultIdEmpty, "device sn is empty", nil)
+	}
+	err := c.client.GetObject(&models.Device{DeviceSn: sn}, &device)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return device, errort.NewCommonErr(errort.DeviceNotExist, fmt.Errorf("device sn (%s) not found", sn))
+		}
+		return device, errort.NewCommonErr(errort.DefaultSystemError, fmt.Errorf("query device fail (sn:%s), %s", device.Id, err))
+	}
+	return
+}
+
 func devicesSearch(c *Client, offset int, limit int, req dtos.DeviceSearchQueryRequest) (devices []models.Device, count uint32, edgeXErr error) {
 	dp := models.Device{}
 	var total int64

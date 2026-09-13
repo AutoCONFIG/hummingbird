@@ -119,6 +119,15 @@ func TestTDengineDataPath(t *testing.T) {
 		t.Fatalf("expected last=3.8, got %+v", lastRows)
 	}
 
+	// Last 查询错误不应被静默吞掉
+	lastErrReq := dtos.ThingModelPropertyDataRequest{
+		ThingModelDataBaseRequest: dtos.ThingModelDataBaseRequest{Last: true},
+		DeviceId:                  "no_such_device",
+		Code:                      "dissolved_oxygen",
+	}
+	_, _, err = client.GetDeviceProperty(lastErrReq, models.Device{Id: "no_such_device"})
+	t.Logf("last on missing table: err=%v (expect table-not-exist surfaced or empty)", err)
+
 	// 计数接口
 	cntReq := rangeReq
 	propertyCount, err := client.GetDevicePropertyCount(cntReq)

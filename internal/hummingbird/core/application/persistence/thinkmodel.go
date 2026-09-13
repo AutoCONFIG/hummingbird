@@ -788,47 +788,56 @@ func (pst *persistApp) searchDeviceThingModelPropertyDataFromTDengine(req dtos.T
 	if err != nil {
 		return nil, err
 	}
-	if req.Code == "" {
+	// 指定 code 时仅查该属性（原实现 code 非空直接返回空，单指标实时查询失效）
+	properties := productInfo.Properties
+	if req.Code != "" {
+		properties = make([]models.Properties, 0)
 		for _, property := range productInfo.Properties {
-			req.Code = property.Code
-			ksv, _, err := pst.dataDbClient.GetDeviceProperty(req, deviceInfo)
-			if err != nil {
-				pst.lc.Errorf("GetDeviceProperty error %+v", err)
-				continue
+			if property.Code == req.Code {
+				properties = append(properties, property)
+				break
 			}
-			var reportData dtos.ReportData
-			if len(ksv) > 0 {
-				reportData = ksv[0]
-			}
-			var unit string
-			if property.TypeSpec.Type == constants.SpecsTypeInt || property.TypeSpec.Type == constants.SpecsTypeFloat {
-				var typeSpecIntOrFloat models.TypeSpecIntOrFloat
-				_ = json.Unmarshal([]byte(property.TypeSpec.Specs), &typeSpecIntOrFloat)
-				unit = typeSpecIntOrFloat.Unit
-			} else if property.TypeSpec.Type == constants.SpecsTypeEnum {
-				//enum 的单位需要特殊处理一下
-				enumTypeSpec := make(map[string]string)
-				_ = json.Unmarshal([]byte(property.TypeSpec.Specs), &enumTypeSpec)
-				for key, value := range enumTypeSpec {
-					s := utils.InterfaceToString(reportData.Value)
-					if key == s {
-						unit = value
-					}
+		}
+	}
+	for _, property := range properties {
+		req.Code = property.Code
+		ksv, _, err := pst.dataDbClient.GetDeviceProperty(req, deviceInfo)
+		if err != nil {
+			pst.lc.Errorf("GetDeviceProperty error %+v", err)
+			continue
+		}
+		var reportData dtos.ReportData
+		if len(ksv) > 0 {
+			reportData = ksv[0]
+		}
+		var unit string
+		if property.TypeSpec.Type == constants.SpecsTypeInt || property.TypeSpec.Type == constants.SpecsTypeFloat {
+			var typeSpecIntOrFloat models.TypeSpecIntOrFloat
+			_ = json.Unmarshal([]byte(property.TypeSpec.Specs), &typeSpecIntOrFloat)
+			unit = typeSpecIntOrFloat.Unit
+		} else if property.TypeSpec.Type == constants.SpecsTypeEnum {
+			//enum 的单位需要特殊处理一下
+			enumTypeSpec := make(map[string]string)
+			_ = json.Unmarshal([]byte(property.TypeSpec.Specs), &enumTypeSpec)
+			for key, value := range enumTypeSpec {
+				s := utils.InterfaceToString(reportData.Value)
+				if key == s {
+					unit = value
 				}
 			}
-
-			if unit == "" {
-				unit = "-"
-			}
-			response = append(response, dtos.ThingModelDataResponse{
-				ReportData: reportData,
-				Code:       property.Code,
-				DataType:   string(property.TypeSpec.Type),
-				Name:       property.Name,
-				Unit:       unit,
-				AccessMode: property.AccessMode,
-			})
 		}
+
+		if unit == "" {
+			unit = "-"
+		}
+		response = append(response, dtos.ThingModelDataResponse{
+			ReportData: reportData,
+			Code:       property.Code,
+			DataType:   string(property.TypeSpec.Type),
+			Name:       property.Name,
+			Unit:       unit,
+			AccessMode: property.AccessMode,
+		})
 	}
 	return response, nil
 }
