@@ -23,6 +23,8 @@ FROM ${BUILDER_BASE} AS builder
 WORKDIR /edge
 
 ENV GOPROXY=https://goproxy.cn,direct
+# go.sum 被 .gitignore 忽略，构建时需允许 go 自动补全校验条目
+ENV GOFLAGS=-mod=mod
 
 COPY . .
 
